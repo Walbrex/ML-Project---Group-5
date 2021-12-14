@@ -199,7 +199,8 @@ def splitData(dataset,y,kfold=False,n_splits=5):
 ##########################################################################################################################################
 ############################################### Functions to train the models ############################################################
 ##########################################################################################################################################       
-        
+
+# Train function for K-Nearest Neighbors model
 def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
     
     """
@@ -231,4 +232,66 @@ def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
     knn_gscv.fit(X_train, y_train)
     
     return knn_gscv.best_estimator_,knn_gscv.best_params_,knn_gscv.best_score_ 
+
+# Train function for Random Forest model
+def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
+    
+    """ 
+    Train a Random forest model using feature selection on a first random forest classifier
+    to produce a final one only based on the most relevant features.
+    
+     arguments : 
+         X_train : pandas Dataframe, training data.
+         y_train : one-dimensional ndarray, target values for training data.
+         if feature selection :
+             featureselection : a boolean indicating whether or not feature selection needs to be performed. 
+             threshold : float, threshold for the importance a feature needs to meet in order to be selected.
+             X_test : pandas Dataframe, testing data (to be updated if only selected features are considered).
+         
+     returns :
+         rfc : fit model
+    """
+
+
+    ### Train a random forest classifier.
+    
+    #create a random forest classifier
+    rfc = RandomForestClassifier(n_estimators=1000,random_state = 22)
+    # train the classifier
+    rfc = rfc.fit(X_train,y_train)
+    
+    if featureselection==True:
+        #create a selector object that will use the random forest classifier to identify
+        #features that have an importance of more than 'threshold'
+        rfc_sfm = SelectFromModel(rfc, threshold=t)
+        #train the selector
+        rfc_sfm.fit(X_train,y_train)
+        
+        #plot the feature importance 
+        plt.figure(figsize=(12,3))
+        features = X_train.columns.values.tolist()
+        importance = rfc.feature_importances_.tolist()
+        feature_series = pd.Series(data=importance,index=features)
+        feature_series.plot.bar()
+        plt.title('Feature Importance')
+        
+        #print the most important features that will be used for the improved model implementing feature selection
+        selected_features = []
+        for index, value in feature_series.items():
+            if value>t:
+                selected_features.append(index)
+        print('The most relevant features are :',selected_features)
+        
+        #transform the data to create a new dataset containing only the most relevant features
+        #note: If done, it must also be done on the testing after used later on !
+        X_selected_train = rfc_sfm.transform(X_train)
+        X_selected_test = rfc_sfm.transform(X_test)
+
+        #create a new random forest classifier for the most important features
+        rfc = RandomForestClassifier(n_estimators=1000, random_state=0)
+
+        #train the new classifier on the new dataset containing the most important features
+        rfc.fit(X_selected_train, y_train)
+    
+    return rfc
 
