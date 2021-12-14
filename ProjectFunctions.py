@@ -58,13 +58,11 @@ def cleanData(data):
     # Remove "ground-truth" columns and store their values aside
 
     if data.columns[0] == 'variance' :
-        banknotes = data
-        y_bkn = banknotes["class"]
-        banknotes = banknotes.drop(columns="class")
+        y = data["class"]
+        data = data.drop(columns="class")
 
     if data.columns[0] == 'id' :
-        kidney = data
-        kidney.drop('id',inplace=True,axis=1)
+        data.drop('id',inplace=True,axis=1)
 
     # Check if all variables are accounted as numerical ones 
 
@@ -85,17 +83,17 @@ def cleanData(data):
     for col in data_not_num_col:
         print('{} has {} values'.format(col,data[col].unique()),'\n')
 
-    if data.columns[0] == 'id' :
+    if data.columns[0] == 'age' :
 
         #Corrects the input errors in the non numerical variables
-        kidney['pcv'].replace(to_replace={'\t43':'43','\t?':np.nan,'?':np.nan},inplace=True)
-        kidney['wc'].replace(to_replace={'\t6200':'6200','\t8400':'8400','\t?':np.nan,'?':np.nan},inplace=True)
-        kidney['rc'].replace(to_replace={'\t?':np.nan,'?':np.nan},inplace=True)
+        data['pcv'].replace(to_replace={'\t43':'43','\t?':np.nan,'?':np.nan},inplace=True)
+        data['wc'].replace(to_replace={'\t6200':'6200','\t8400':'8400','\t?':np.nan,'?':np.nan},inplace=True)
+        data['rc'].replace(to_replace={'\t?':np.nan,'?':np.nan},inplace=True)
         
         # Convert them to numerical variables
-        kidney['pcv'] = pd.to_numeric (kidney['pcv'])
-        kidney['wc'] = pd.to_numeric (kidney['wc'])
-        kidney['rc'] = pd.to_numeric (kidney['rc'])
+        data['pcv'] = pd.to_numeric (data['pcv'])
+        data['wc'] = pd.to_numeric (data['wc'])
+        data['rc'] = pd.to_numeric (data['rc'])
         
         # Add them to our list of numerical variables and remove them from the other list
         data_num_col.append('pcv')
@@ -106,18 +104,18 @@ def cleanData(data):
         data_not_num_col.remove('rc')
         
         # Corrects the input errors in the non numerical variables
-        kidney['dm'].replace(to_replace={' yes':'yes','\tno':'no','\tyes':'yes'},inplace=True)
-        kidney['cad'].replace(to_replace={'\tno':'no'},inplace=True)
-        kidney['classification'].replace(to_replace={'ckd\t':'ckd'},inplace=True)
-
+        data['dm'].replace(to_replace={' yes':'yes','\tno':'no','\tyes':'yes'},inplace=True)
+        data['cad'].replace(to_replace={'\tno':'no'},inplace=True)
+        data['classification'].replace(to_replace={'ckd\t':'ckd'},inplace=True)
+        
         # No more dirtiness in non numerical data
         #for col in kdn_not_num_col:
             #print('{} has {} values'.format(col,kidney[col].unique()),'\n')
         
         # Remove "ground-truth" columns and store their values aside
-        y_kdn = kidney["classification"]
-        kidney = kidney.drop(columns="classification")
-
+        y = data["classification"]
+        data = data.drop(columns="classification")
+        data_not_num_col.remove('classification')
 
     # Check the number of missing values in our data for each variable
     
@@ -125,15 +123,14 @@ def cleanData(data):
         
         # Replace missing values by average values for numerical variables
         for col in data_num_col:     
-            kidney[col].fillna(kidney[col].mean(),inplace=True)
+            data[col].fillna(data[col].mean(),inplace=True)
 
         # Replace missing values by the most frequent value for non numerical variables.
         # To preserve the categorical aspect of the variables 
         for col in data_not_num_col:
-            kidney[col].fillna(kidney[col].value_counts().index[0],inplace=True)
+            data[col].fillna(data[col].value_counts().index[0],inplace=True)
 
     # Center and normalize the data
-
     for col in data_num_col:
         data[col] = (data[col] - data[col].mean()) / (data[col].std())
 
@@ -141,6 +138,9 @@ def cleanData(data):
     le = LabelEncoder()
     for col in data_not_num_col:
         data[col]=le.fit_transform(data[col])
+        
+    # Return the data and the "ground-truth"
+    return data, y
         
 ##########################################################################################################################################
 ############################################### Function to split the dataset ############################################################
@@ -194,4 +194,41 @@ def splitData(dataset,y,kfold=False,n_splits=5):
         return K_Fold_X_train,K_Fold_X_valid,K_Fold_y_train,K_Fold_y_valid,X_test,y_test
     else:
         return X_train,X_test,y_train,y_test     
+
+    
+##########################################################################################################################################
+############################################### Functions to train the models ############################################################
+##########################################################################################################################################       
         
+def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
+    
+    """
+    Train a K-Nearest Neighbors model using cross-validation for the choice of K.
+    
+     arguments :
+         X_train : pandas Dataframe, training data.
+         y_train : one-dimensional ndarray, target values for training data.
+         n_neigbors : list of the value of neighbor's number to be tested.
+         n_splits : number of fold for cross-validation.
+         
+     returns :
+         knn_gscv.best_estimator_ : fit model with the most accurate number of neighbor value
+         knn_gscv.best_params_ : top performing number of neigbor value
+         knn_gscv.best_score_ : mean score for the top performing number of neigbor value
+    """
+    
+    #Train the KNN classifier.
+
+    knn = KNeighborsClassifier()
+    
+    #create a dictionary of all values we want to test for n_neighbors
+    param_grid = {'n_neighbors': (n_neighbors)}
+    
+    #use gridsearch to test all values for n_neighbors using cross-validation with K-fold of value cv
+    knn_gscv = GridSearchCV(knn, param_grid, cv=cv)
+    
+    #fit model to data
+    knn_gscv.fit(X_train, y_train)
+    
+    return knn_gscv.best_estimator_,knn_gscv.best_params_,knn_gscv.best_score_ 
+
