@@ -2,10 +2,12 @@
 
 import pandas as pd 
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split,KFold,GridSearchCV 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.feature_selection import SelectFromModel
 
 ##########################################################################################################################################
 ############################################### Function to import the dataset ###########################################################
@@ -288,10 +290,11 @@ def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
         X_selected_test = rfc_sfm.transform(X_test)
 
         #create a new random forest classifier for the most important features
-        rfc = RandomForestClassifier(n_estimators=1000, random_state=0)
+        rfc_selected = RandomForestClassifier(n_estimators=1000, random_state=0)
 
         #train the new classifier on the new dataset containing the most important features
-        rfc.fit(X_selected_train, y_train)
-    
-    return rfc
+        rfc_selected.fit(X_selected_train, y_train)
+        return rfc_selected,X_selected_test
+    else:
+        return rfc
 
