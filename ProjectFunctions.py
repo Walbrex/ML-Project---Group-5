@@ -3,14 +3,13 @@
 import pandas as pd 
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import KFold
-from sklearn.model_selection import GridSearchCV 
+from sklearn.model_selection import train_test_split,KFold,GridSearchCV 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
-
-# Function to import the dataset 
+##########################################################################################################################################
+############################################### Function to import the dataset ###########################################################
+##########################################################################################################################################
 
 def importData(file):
     """
@@ -45,7 +44,9 @@ def importData(file):
     else :
         return "dataset not recognized"
     
-# Function to clean the dataset
+##########################################################################################################################################
+############################################### Function to clean the dataset ############################################################
+##########################################################################################################################################
 
 def cleanData(data):
     """
@@ -136,8 +137,61 @@ def cleanData(data):
     for col in data_num_col:
         data[col] = (data[col] - data[col].mean()) / (data[col].std())
 
-
     # One-hot encodes non numerical features
     le = LabelEncoder()
     for col in data_not_num_col:
         data[col]=le.fit_transform(data[col])
+        
+##########################################################################################################################################
+############################################### Function to split the dataset ############################################################
+##########################################################################################################################################
+        
+def splitData(dataset,y,kfold=False,n_splits=5):
+    
+    """ 
+     arguments : 
+         dataset : a pandas Dataframe containing the data. 
+         y : one-dimensional ndarray, ground truth (correct) labels.
+         kfold : a boolean indicating whether the dataset needs to be split between training and test sets only (false), 
+         or if the training set also needs to be split for cross-validation. 
+         n_splits : number of fold (useful only if K-Fold activated).
+         
+     returns :
+         X_train,X_test : pandas Dataframes corresponding to the train-test split of the input dataset.
+         y_train,y_test : one-dimensional ndarray corresponding to the train-test split of the ground truth (correct) labels.
+         if K-Fold : 
+             K_Fold_X_train,K_Fold_X_valid : Lists containing the KFold splits of the training and validation datasets.
+             K_Fold_y_train,K_Fold_y_valid :  Lists containing the KFold splits of the training and validation labels.
+             X_test : pandas Dataframe corresponding to the test split of the input dataset.
+             y_test : one-dimensional ndarray corresponding to the test split of the ground truth (correct) labels.    
+    """
+    
+    
+    """Split the dataset between training set and test set"""
+    X_train,X_test,y_train,y_test = train_test_split(dataset,y,test_size = 0.3)
+    
+    """Training set preparation for 10-Fold cross-validation"""
+    if kfold==True:
+
+        # Shuffling there is not mandatory since train_test_split already shuffle the data 
+        # but we still decided to use it
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=34) 
+
+        K_Fold_X_train = []
+        K_Fold_X_valid = []
+        K_Fold_y_train = []
+        K_Fold_y_valid = []
+
+        for train_index, test_index in kf.split(X_train):
+            X_cross_train, X_valid = X_train.iloc[train_index], X_train.iloc[test_index]
+            y_cross_train, y_valid = y_train.iloc[train_index], y_train.iloc[test_index]
+
+            K_Fold_X_train.append(X_cross_train)
+            K_Fold_X_valid.append(X_valid)
+            K_Fold_y_train.append(y_cross_train)
+            K_Fold_y_valid.append(y_valid)
+
+        return K_Fold_X_train,K_Fold_X_valid,K_Fold_y_train,K_Fold_y_valid,X_test,y_test
+    else:
+        return X_train,X_test,y_train,y_test     
+        
