@@ -119,6 +119,9 @@ def cleanData(data):
         y = data["classification"]
         data = data.drop(columns="classification")
         data_not_num_col.remove('classification')
+        # One-hot encodes the ground truth
+        le = LabelEncoder()
+        y = le.fit_transform(y)
 
     # Check the number of missing values in our data for each variable
     if data.isna().sum(axis=0).any():
