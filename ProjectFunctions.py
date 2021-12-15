@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split,KFold,GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import SelectFromModel
+from sklearn.metrics import classification_report, accuracy_score
 
 ##########################################################################################################################################
 ############################################### Function to import the dataset ###########################################################
@@ -298,3 +299,19 @@ def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
     else:
         return rfc
 
+##########################################################################################################################################
+############################################### Functions to test the model ##############################################################
+##########################################################################################################################################      
+
+def testModel(model, X_test, y_test):
+
+    """ 
+    This function test the model of classification we have used previously.
+    It takes for arguments the test set and returns the classification report which includes precision, recall, f1 score, support
+    It also returns the accuracy score of the model.
+    """
+
+    ### Validation for the chosen model of classification.
+    model_pred = model.predict(X_test)
+    print("This is the classification report : ", classification_report(y_test, model_pred))
+    print("This is the accuracy score : ", accuracy_score(y_test, model_pred))
