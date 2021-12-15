@@ -10,6 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.metrics import classification_report, accuracy_score
 
+
 ##########################################################################################################################################
 ############################################### Function to import the dataset ###########################################################
 ##########################################################################################################################################
@@ -47,6 +48,7 @@ def importData(file):
     else :
         return "dataset not recognized"
     
+    
 ##########################################################################################################################################
 ############################################### Function to clean the dataset ############################################################
 ##########################################################################################################################################
@@ -59,7 +61,6 @@ def cleanData(data):
     """
     
     # Remove "ground-truth" columns and store their values aside
-
     if data.columns[0] == 'variance' :
         y = data["class"]
         data = data.drop(columns="class")
@@ -68,7 +69,6 @@ def cleanData(data):
         data.drop('id',inplace=True,axis=1)
 
     # Check if all variables are accounted as numerical ones 
-
     data_num_col = []
     data_not_num_col = []
     
@@ -80,11 +80,9 @@ def cleanData(data):
     
     #print('This is the numerical columns of our dataset :','\n',data_num_col)
     #print('This is the non numerical columns of our dataset :','\n',data_not_num_col)
-
     # Highlighting dirtiness in non numerical data
-    
-    for col in data_not_num_col:
-        print('{} has {} values'.format(col,data[col].unique()),'\n')
+    #for col in data_not_num_col:
+        #print('{} has {} values'.format(col,data[col].unique()),'\n')
 
     if data.columns[0] == 'age' :
 
@@ -121,7 +119,6 @@ def cleanData(data):
         data_not_num_col.remove('classification')
 
     # Check the number of missing values in our data for each variable
-    
     if data.isna().sum(axis=0).any():
         
         # Replace missing values by average values for numerical variables
@@ -145,6 +142,7 @@ def cleanData(data):
     # Return the data and the "ground-truth"
     return data, y
         
+    
 ##########################################################################################################################################
 ############################################### Function to split the dataset ############################################################
 ##########################################################################################################################################
@@ -170,10 +168,10 @@ def splitData(dataset,y,kfold=False,n_splits=5):
     """
     
     
-    """Split the dataset between training set and test set"""
+    #Split the dataset between training set and test set
     X_train,X_test,y_train,y_test = train_test_split(dataset,y,test_size = 0.3)
     
-    """Training set preparation for 10-Fold cross-validation"""
+    #Training set preparation for 10-Fold cross-validation
     if kfold==True:
 
         # Shuffling there is not mandatory since train_test_split already shuffle the data 
@@ -203,7 +201,8 @@ def splitData(dataset,y,kfold=False,n_splits=5):
 ############################################### Functions to train the models ############################################################
 ##########################################################################################################################################       
 
-# Train function for K-Nearest Neighbors model
+### Train function for K-Nearest Neighbors model ###
+
 def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
     
     """
@@ -222,7 +221,6 @@ def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
     """
     
     #Train the KNN classifier.
-
     knn = KNeighborsClassifier()
     
     #create a dictionary of all values we want to test for n_neighbors
@@ -236,7 +234,9 @@ def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
     
     return knn_gscv.best_estimator_,knn_gscv.best_params_,knn_gscv.best_score_ 
 
-# Train function for Random Forest model
+
+### Train function for Random Forest model ###
+
 def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
     
     """ 
@@ -254,23 +254,22 @@ def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
      returns :
          rfc : fit model
     """
-
-
-    ### Train a random forest classifier.
     
-    #create a random forest classifier
+    # Create a random forest classifier
     rfc = RandomForestClassifier(n_estimators=1000,random_state = 22)
-    # train the classifier
+    
+    # Train the classifier
     rfc = rfc.fit(X_train,y_train)
     
     if featureselection==True:
-        #create a selector object that will use the random forest classifier to identify
-        #features that have an importance of more than 'threshold'
+        
+        # Create a selector object that will use the random forest classifier to identify
+        # Features that have an importance of more than 'threshold'
         rfc_sfm = SelectFromModel(rfc, threshold=t)
         #train the selector
         rfc_sfm.fit(X_train,y_train)
         
-        #plot the feature importance 
+        # Plot the feature importance 
         plt.figure(figsize=(12,3))
         features = X_train.columns.values.tolist()
         importance = rfc.feature_importances_.tolist()
@@ -278,24 +277,25 @@ def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
         feature_series.plot.bar()
         plt.title('Feature Importance')
         
-        #print the most important features that will be used for the improved model implementing feature selection
+        # Print the most important features that will be used for the improved model implementing feature selection
         selected_features = []
         for index, value in feature_series.items():
             if value>t:
                 selected_features.append(index)
         print('The most relevant features are :',selected_features)
-        
-        #transform the data to create a new dataset containing only the most relevant features
+       
+        # Transform the data to create a new dataset containing only the most relevant features
         #note: If done, it must also be done on the testing after used later on !
         X_selected_train = rfc_sfm.transform(X_train)
         X_selected_test = rfc_sfm.transform(X_test)
 
-        #create a new random forest classifier for the most important features
+        # Create a new random forest classifier for the most important features
         rfc_selected = RandomForestClassifier(n_estimators=1000, random_state=0)
 
-        #train the new classifier on the new dataset containing the most important features
+        # Train the new classifier on the new dataset containing the most important features
         rfc_selected.fit(X_selected_train, y_train)
         return rfc_selected,X_selected_test
+    
     else:
         return rfc
 
@@ -311,7 +311,7 @@ def testModel(model, X_test, y_test):
     It also returns the accuracy score of the model.
     """
 
-    ### Validation for the chosen model of classification.
+    # Validation for the chosen model of classification.
     model_pred = model.predict(X_test)
     print("This is the classification report : ", classification_report(y_test, model_pred))
     print("This is the accuracy score : ", accuracy_score(y_test, model_pred))
