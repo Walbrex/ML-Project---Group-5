@@ -14,6 +14,7 @@ from sklearn.metrics import classification_report, accuracy_score
 ##########################################################################################################################################
 ############################################### Function to import the dataset ###########################################################
 ##########################################################################################################################################
+### by CHILD-JAUVERT Victor
 
 def importData(file):
     """
@@ -52,6 +53,7 @@ def importData(file):
 ##########################################################################################################################################
 ############################################### Function to clean the dataset ############################################################
 ##########################################################################################################################################
+### by CHILD-JAUVERT Victor
 
 def cleanData(data):
     """
@@ -146,7 +148,8 @@ def cleanData(data):
 ##########################################################################################################################################
 ############################################### Function to split the dataset ############################################################
 ##########################################################################################################################################
-        
+### by DUSSOLLE Antoine
+
 def splitData(dataset,y,kfold=False,n_splits=5):
     
     """ 
@@ -201,9 +204,11 @@ def splitData(dataset,y,kfold=False,n_splits=5):
 ############################################### Functions to train the models ############################################################
 ##########################################################################################################################################       
 
-### Train function for K-Nearest Neighbors model ###
 
-def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
+### Train function for K-Nearest Neighbors model ###
+### by CLAIR Robin
+
+def trainKnn(X_train,y_train,crossval=False,n_neighbors=np.arange(1,25),cv=5):
     
     """
     Train a K-Nearest Neighbors model using cross-validation for the choice of K.
@@ -211,6 +216,7 @@ def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
      arguments :
          X_train : pandas Dataframe, training data.
          y_train : one-dimensional ndarray, target values for training data.
+         crossval : a boolean indicating whether or not cross-validation must be performed to find the best number of neighbors.
          n_neigbors : list of the value of neighbor's number to be tested.
          n_splits : number of fold for cross-validation.
          
@@ -221,21 +227,28 @@ def trainKnn(X_train,y_train,n_neighbors=np.arange(1,25),cv=5):
     """
     
     #Train the KNN classifier.
+    
+    #initialize a KNeighborsClassifier with n_neighbors default value (=5)
     knn = KNeighborsClassifier()
     
-    #create a dictionary of all values we want to test for n_neighbors
-    param_grid = {'n_neighbors': (n_neighbors)}
-    
-    #use gridsearch to test all values for n_neighbors using cross-validation with K-fold of value cv
-    knn_gscv = GridSearchCV(knn, param_grid, cv=cv)
-    
-    #fit model to data
-    knn_gscv.fit(X_train, y_train)
-    
-    return knn_gscv.best_estimator_,knn_gscv.best_params_,knn_gscv.best_score_ 
+    if crossval == True :
+        #create a dictionary of all values we want to test for n_neighbors
+        param_grid = {'n_neighbors': (n_neighbors)}
 
+        #use gridsearch to test all values for n_neighbors using cross-validation with K-fold of value cv
+        knn_gscv = GridSearchCV(knn, param_grid, cv=cv)
 
+        #fit model to data
+        knn_gscv.fit(X_train, y_train)
+
+        return knn_gscv.best_estimator_,knn_gscv.best_params_,knn_gscv.best_score_ 
+    else:
+        knn.fit(X_train,y_train)
+        return knn
+
+    
 ### Train function for Random Forest model ###
+### by DUSSOLLE Antoine
 
 def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
     
@@ -246,8 +259,8 @@ def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
      arguments : 
          X_train : pandas Dataframe, training data.
          y_train : one-dimensional ndarray, target values for training data.
-         if feature selection :
-             featureselection : a boolean indicating whether or not feature selection needs to be performed. 
+         featureselection : a boolean indicating whether or not feature selection needs to be performed.
+         if feature selection : 
              threshold : float, threshold for the importance a feature needs to meet in order to be selected.
              X_test : pandas Dataframe, testing data (to be updated if only selected features are considered).
          
@@ -302,6 +315,7 @@ def trainRfc(X_train,y_train,featureselection=False,t=0.15,X_test=None):
 ##########################################################################################################################################
 ############################################### Functions to test the model ##############################################################
 ##########################################################################################################################################      
+### by DE ROMEMONT Charlotte
 
 def testModel(model, X_test, y_test):
 
